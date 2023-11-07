@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 import numpy as np
 from google.oauth2 import service_account
 from google.cloud import bigquery
@@ -36,9 +37,32 @@ query ="""
 #     st.write("✍️ " + row['word'])
 # st.balloons()
 
-st.header("Test st.button")
+st.header("Test st.write()")
 
-if st.button("Click me"):
-    st.write("Clicked!")
-else:
-    st.write("Not clicked!")
+# ex.1
+st.write('Hello, *World!* :sunglasses:')
+
+# ex.2
+st.write(1234)
+
+# ex.3
+st.write('1 + 1 = ', 2)
+
+# ex.4
+df = pd.DataFrame({
+    'first column':  [1, 2, 3, 4],
+    'second column': [10, 20, 30, 40]
+    })
+st.write(df)
+
+# ex.5
+st.write('Below is a Dataframe:', df, 'Above is a Dataframe')
+
+# ex.6
+df2 = pd.DataFrame(
+    np.random.randn(20, 3)
+    , columns=['a', 'b', 'c'])
+c = alt.Chart(df2).mark_circle().encode(
+    x='a', y='b', size='c', color='c', tooltip=['a', 'b', 'c'])
+st.write(df2)
+st.write(c)
