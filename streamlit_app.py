@@ -6,7 +6,7 @@ from google.oauth2 import service_account
 from google.cloud import bigquery
 from datetime import time, datetime
 
-st.title('Connect Streamlit to Google Bigquery')
+st.title('Test Streamlit')
 
 # Create API client.
 credentials = service_account.Credentials.from_service_account_info(
@@ -38,39 +38,14 @@ query ="""
 #     st.write("✍️ " + row['word'])
 # st.balloons()
 
-st.header("Test st.slider()")
+st.header("Test Line Chart")
 
-# ex.1
-st.subheader("Slider")
-
-age = st.slider("How old are you?", 0, 130, 33)
-st.write("I'm ", age, "years old")
-
-# ex.2
-st.subheader("Range Slider")
-
-values = st.slider(
-    "select a range of values",
-    0.0, 100.0, (25.0, 75.0)
+chart_data = pd.DataFrame(
+    np.random.randn(20, 3),
+    columns=['a', 'b', 'c']
     )
-st.write("Valus:", values)
 
-# ex.3
-st.subheader("Range time slider")
+st.table(chart_data)
 
-appointment = st.slider(
-    "Schedule your appointment:",
-    value = (time(11, 30), time(12, 45))
-    )
-st.write("You're schedule for:", appointment)
-
-# ex.4
-st.subheader("Datetime slider")
-
-start_time = st.slider(
-    "When do you start?",
-    value = datetime(2020, 1, 1, 9, 30),
-    format = "YYYY/MM/DD - hh:mm"
-    # format = "MM/DD/YY - hh:mm"
-    )
-st.write("Start time:", start_time)
+st.write(chart_data, chart_data.head(), chart_data.tail())
+st.line_chart(chart_data)
