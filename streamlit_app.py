@@ -50,7 +50,7 @@ query ="""
 
 ## ------------------ Load Data ------------------ ##
 # Read local csv file
-df = pd.read_csv('~/Desktop/test_covid19_analysis_japan.csv')
+df = pd.read_csv('data/test_covid19_analysis_japan.csv')
 df_dataset = df.reset_index(drop=True)
 
 # Filter dataset by Japan
@@ -180,7 +180,7 @@ def create_chart(KEYNAME, CARD_TITLE, INPUT_DATA):
                             'tickPadding': 3,
                             'tickRotation': 0,
                             'legend': 'count',
-                            'legendOffset': -60,
+                            'legendOffset': -75,
                             'legendPosition': 'middle'
                         },
                         enableGridX=False,
