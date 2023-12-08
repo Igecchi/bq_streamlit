@@ -1,11 +1,12 @@
-import streamlit as st
+## ------------------ Import Library(必要なライブラリのインポート) ------------------ ##
 import pandas as pd
-import sqlite3
-from google.oauth2 import service_account
-from google.cloud import bigquery
+import streamlit as st
 from datetime import datetime
 from streamlit_elements import elements, dashboard, mui, nivo
 from streamlit_elements import dashboard
+import sqlite3
+from google.oauth2 import service_account
+from google.cloud import bigquery
 
 st.set_page_config(
     page_title="streamlit_app",
@@ -48,13 +49,12 @@ query ="""
 # ## Save result as a csv file.
 # df_dataset.to_csv('~/Desktop/test_covid19_analysis.csv')
 
-## ------------------ Load Data ------------------ ##
-# Read local csv file
-df = pd.read_csv('data/test_covid19_analysis_japan.csv')
-df_dataset = df.reset_index(drop=True)
+## ------------------ Load Data & Process（データの読み込みと加工） ------------------ ##
+# Read csv file（csvの読み込み）
+df = pd.read_csv('data/test_covid19_analysis_japan.csv', index_col=0)
+df_dataset = df.reset_index(drop=True) # Reset index（indexの振り直し）
 
-# Filter dataset by Japan
-df_dataset = df_dataset.drop(columns=df_dataset.columns[[0]]) # drop column
+# Filter dataset by Japan and extract prefecture name list
 df_dataset = df_dataset[(df_dataset['country_name']=='Japan')]
 df_dataset = df_dataset.rename({'subregion1_name': 'prefecture_name'}, axis='columns')
 prefecture_name_list = df_dataset['prefecture_name'].unique()
@@ -64,22 +64,23 @@ column_list = df_dataset.columns.to_list()
 df_dataset = df_dataset.fillna(0)
 df_dataset_all = df_dataset.copy()
 
-## ------------------ Sidebar ------------------ ##
-## --- Input box --- ##
-## Input box of prefecture_name
+## ------------------ Sidebar（サイドバーの設定） ------------------ ##
+## --- Input box（データ絞り込み用の入力欄の作成） --- ##
+## Input box of prefecture_name（複数都道府県で絞り込みを行うための入力Boxの作成）
 prefecture_name = st.sidebar.multiselect(
     'Prefecutre Name'
     , prefecture_name_list
     , default=['Tokyo']
     )
 
-## Input box of Start day
+## Input box of Start day（集計期間の起点となる日付）
 start_date = pd.to_datetime(st.sidebar.date_input('Start date', datetime(2020, 3, 1)))
 
-## Input box of End day
+## Input box of End day（集計期間の終点となる日付）
 end_date = pd.to_datetime(st.sidebar.date_input('End date', datetime(2021, 12, 31)))
+st.sidebar.write('------------------')
 
-## --- Check box --- ##
+## --- Check box（グラフ・表の表示/非表示を出し分けるためのチェックボックス作成） --- ##
 st.sidebar.write('Graph Check Box')
 is_graph_active_confirmed = st.sidebar.checkbox('Show Confirmed Graph', value=True)
 is_graph_active_deceased = st.sidebar.checkbox('Show Deceased Graph', value=True)
@@ -97,12 +98,13 @@ column_list = st.sidebar.multiselect(
     , default=['country_name', 'prefecture_name', 'population', 'population_male', 'population_female', 'cumulative_confirmed', 'cumulative_deceased', 'cumulative_recovered']
     )
 
-## ------------------ Dataset processing ------------------ ##
-
-## Filter dataset by Japan prefecture_name
+## ------------------ Dataset processing（データセットの加工・絞り込み） ------------------ ##
 df_dataset['date'] = pd.to_datetime(df_dataset['date'])
+# Filter dataset by first day of month（月初日のみ抽出）
 df_dataset = df_dataset[(df_dataset['date'].dt.day == 1)]
+## Filter dataset by selected prefecture_name&term（サイドバーで選択された都道府県・集計期間に絞り込み）
 df_dataset = df_dataset[(df_dataset['prefecture_name'].isin(prefecture_name)) & (df_dataset['date'] >= start_date) & (df_dataset['date'] <= end_date)]
+# Change date type to str（日付型だと想定通りの可視化ができなかったため、文字列型に変換）
 df_dataset['date'] = df_dataset['date'].astype(str)
 
 ## duplicate dataset 1.for graph, 2.for table
@@ -113,12 +115,10 @@ df_dataset_table = df_dataset.copy()
 # st.write('Column Name', column_list)
 # st.write("Part of Dataframe", df_dataset_graph.head())
 
-
-
-## ------------------ Data Visualization ------------------ ##
+## ------------------ Data Visualization（データの可視化） ------------------ ##
 st.header('Data Visualization')
 
-### ------------------ Graph Visualization setting ------------------ ###
+### ------------------ Graph Visualization setting（グラフの可視化を行うための設定） ------------------ ###
 tmp = df_dataset_graph.groupby(['date']).sum()[['cumulative_confirmed']]
 tmp['date'] = tmp.index
 tmp = tmp.rename(columns={'date': 'x', 'cumulative_confirmed': 'y'})[['x', 'y']].to_json(orient='records')
@@ -221,19 +221,18 @@ def create_chart(KEYNAME, CARD_TITLE, INPUT_DATA):
                         ]
                     )
 
-### ------------------ Graph Visualization ------------------ ###
+### ------------------ Graph Visualization（グラフの可視化） ------------------ ###
 with elements("dashboard"):
-    # First, build a default layout for every element you want to include in your dashboard
-
+    # default layout setting（デフォルトレイアウトの設定）
     layout = [
         # Parameters: element_identifier, x_pos, y_pos, width, height, [item properties...]
-        # for Chart
-        dashboard.Item("confirmed_chart", 0, 0, 6, 3.5),
-        dashboard.Item("deceased_chart", 6, 0, 6, 3.5),
-        dashboard.Item("male_pupulation_chart", 0, 0, 6, 3.5),
-        dashboard.Item("female_pupulation_chart", 6, 0, 6, 3.5),
+        dashboard.Item("confirmed_chart", 0, 0, 5, 3.5),
+        dashboard.Item("deceased_chart", 5, 0, 5, 3.5),
+        dashboard.Item("male_pupulation_chart", 0, 0, 5, 3.5),
+        dashboard.Item("female_pupulation_chart", 5, 0, 5, 3.5),
     ]
 
+    # IF check box is ON, show graph.（サイドバーでチェックボックスがONになっている場合のみグラフを表示）
     with dashboard.Grid(layout, draggableHandle=".draggable"):
         if is_graph_active_confirmed:
             dataset_graph_confirmed = create_data(y_data='cumulative_confirmed')
@@ -253,17 +252,17 @@ with elements("dashboard"):
             create_chart(KEYNAME="female_pupulation_chart", CARD_TITLE="Female Pupulation Chart", INPUT_DATA=dataset_graph_population_female)
 
 
-### ------------------ Table Visualization ------------------ ###
+### ------------------ Table Visualization（表の可視化） ------------------ ###
 ## Check box what index to show(Table)
 if is_table_active:
     ## Show result as a table with scroll bar.
     st.dataframe(df_dataset_table[df_dataset_table['prefecture_name'].isin(prefecture_name)].groupby(['date']).sum()[column_list].T)
 
 
-## ------------------ SQL Editor ------------------ ##
+## ------------------ SQL Editor（SQLエディタの作成） ------------------ ##
 conn = sqlite3.connect('data.db')
 conn.commit()
-df_dataset_table.to_sql('my_table', conn, if_exists='replace', index=False)
+df_dataset_all.to_sql('my_table', conn, if_exists='replace', index=False)
 
 sql_editor_md = """
 ## SQL Editor
